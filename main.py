@@ -1,12 +1,20 @@
 import fastf1
-from src.session_loader import load_race_session
+from src.session_loader import load_race_session, get_driver_telemetry
+from src.inspect import inspect_telemetry
 
 fastf1.Cache.enable_cache("data")
 
-if __name__ == "__main__":
-    session = load_race_session(2025, "Monace", "R")
+'''CHANGE DRIVERS HERE'''
+DRIVER_A = "VER"
+DRIVER_B = "LEC"
 
-    print(f"Event: {session.event['EventName']}")
-    print(f"Session: {session.name}")
-    print(f"Drivers: {session.results['Abbreviation'].tolist()}")
-    print(f"Laps loaded: {len(session.laps)}")
+if __name__ == "__main__":
+    session = load_race_session(2025, "Monaco", "R")
+
+    tel_a = get_driver_telemetry(session, DRIVER_A)
+    tel_b = get_driver_telemetry(session, DRIVER_B)
+
+    inspect_telemetry(tel_a, DRIVER_A)
+    inspect_telemetry(tel_b, DRIVER_B)
+
+    print(f"\nCombined rows for benchmarking later: {len(tel_a) + len(tel_b):,}")
