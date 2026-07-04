@@ -1,33 +1,49 @@
 import fastf1
 import pandas as pd
+import logging
 from src.benchmarks import verify_results, run_timeit_benchmark, run_cprofile_loops, plot_benchmark
 from src.session_loader import load_race_session, get_driver_telemetry
-from src.inspect import inspect_telemetry
+from src.telemetry_inspect import inspect_telemetry
 from src.metrics import compare_drivers
 
 fastf1.Cache.enable_cache("data")
 
-'''CHANGE DRIVERS HERE'''
+logging.getLogger("fastf1").setLevel(logging.WARNING)
+
+YEAR = 2025
+GP = "Monaco"
+SESSION = "R"
 DRIVER_A = "VER"
 DRIVER_B = "LEC"
+VERBOSE = False
+BENCHMARK_RUNS = 50
+PROFILE_RUNS = 3
 
-if __name__ == "__main__":
-    session = load_race_session(2025, "Monaco", "R")
+def main():
+    print("=" * 50)
+    print("FastF1 Telemetry Performance Analyzer")
+    print("=" * 50)
+
+    session = load_race_session(YEAR, GP, SESSION)
+    print(f"\nLoaded: {session.event['EventName']} — {session.name}")
 
     tel_a = get_driver_telemetry(session, DRIVER_A)
     tel_b = get_driver_telemetry(session, DRIVER_B)
 
-    inspect_telemetry(tel_a, DRIVER_A)
-    inspect_telemetry(tel_b, DRIVER_B)
+    if VERBOSE:
+        inspect_telemetry(tel_a, DRIVER_A)
+        inspect_telemetry(tel_b, DRIVER_B)
 
     compare_drivers(session, tel_a, tel_b, DRIVER_A, DRIVER_B)
 
     combined = pd.concat([tel_a, tel_b], ignore_index=True)
     verify_results(combined)
+    run_timeit_benchmark(combined, number=BENCHMARK_RUNS)
+    run_cprofile_loops(combined, number=PROFILE_RUNS)
+    plot_benchmark(combined, number=BENCHMARK_RUNS)
 
-    run_timeit_benchmark(combined, number=50)
-    run_cprofile_loops(combined, number=3)
+    print("\nDone.")
 
-    plot_benchmark(combined, number=50)
 
-    print(f"\nCombined rows for benchmarking later: {len(tel_a) + len(tel_b):,}")
+if __name__ == "__main__":
+    main()

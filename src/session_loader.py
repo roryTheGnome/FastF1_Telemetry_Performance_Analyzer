@@ -7,7 +7,7 @@ def load_race_session(year: int, gp: str, session_type: str = "R"):
     return session
 
 def get_driver_laps(session, driver: str):
-    return session.laps.pick_driver(driver)
+    return session.laps.pick_drivers([driver])
 
 def get_driver_telemetry(session, driver: str):
     import pandas as pd
