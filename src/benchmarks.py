@@ -1,5 +1,10 @@
 import numpy as np
 import pandas as pd
+import timeit
+import cProfile
+import pstats
+import io
+import matplotlib.pyplot as plt
 
 
 def compute_pandas(df: pd.DataFrame) -> tuple[float, float, float]:
@@ -69,3 +74,77 @@ def verify_results(df: pd.DataFrame) -> None:
     print("All implementations match:")
     for name, val in zip(names, pd_result):
         print(f"  {name}: {val:.3f}")
+
+def _prepare_arrays(df: pd.DataFrame):
+    return (
+        df["Throttle"].tolist(),
+        df["Speed"].tolist(),
+        df["Brake"].tolist(),
+        df["Distance"].tolist(),
+        df["Throttle"].to_numpy(),
+        df["Speed"].to_numpy(),
+        df["Brake"].to_numpy(),
+        df["Distance"].to_numpy(),
+    )
+
+
+def run_timeit_benchmark(df: pd.DataFrame, number: int = 50) -> None:
+    throttle_l, speed_l, brake_l, distance_l, throttle_a, speed_a, brake_a, distance_a = _prepare_arrays(df)
+
+    pandas_time = timeit.timeit(lambda: compute_pandas(df), number=number)
+    loops_time = timeit.timeit(
+        lambda: compute_loops(throttle_l, speed_l, brake_l, distance_l),
+        number=number,
+    )
+    numpy_time = timeit.timeit(
+        lambda: compute_numpy(throttle_a, speed_a, brake_a, distance_a),
+        number=number,
+    )
+
+    print(f"\n=== timeit ({number} runs, {len(df):,} rows) ===")
+    print(f"pandas:  {pandas_time:.4f}s  ({pandas_time / number * 1000:.2f} ms/run)")
+    print(f"loops:   {loops_time:.4f}s  ({loops_time / number * 1000:.2f} ms/run)")
+    print(f"numpy:   {numpy_time:.4f}s  ({numpy_time / number * 1000:.2f} ms/run)")
+    print(f"\nloops vs numpy: {loops_time / numpy_time:.1f}x slower")
+    print(f"loops vs pandas: {loops_time / pandas_time:.1f}x slower")
+
+
+def run_cprofile_loops(df: pd.DataFrame, number: int = 3) -> None:
+    throttle_l, speed_l, brake_l, distance_l, *_ = _prepare_arrays(df)
+
+    def target():
+        for _ in range(number):
+            compute_loops(throttle_l, speed_l, brake_l, distance_l)
+
+    profiler = cProfile.Profile()
+    profiler.enable()
+    target()
+    profiler.disable()
+
+    stream = io.StringIO()
+    stats = pstats.Stats(profiler, stream=stream).sort_stats("cumulative")
+    stats.print_stats(15)
+
+    print(f"\n=== cProfile (loops, {number} runs) ===")
+    print(stream.getvalue())
+
+def _bench_times(df: pd.DataFrame, number: int = 50) -> tuple[float, float, float]:
+    throttle_l, speed_l, brake_l, distance_l, throttle_a, speed_a, brake_a, distance_a = _prepare_arrays(df)
+    pandas_time = timeit.timeit(lambda: compute_pandas(df), number=number)
+    loops_time = timeit.timeit(
+        lambda: compute_loops(throttle_l, speed_l, brake_l, distance_l), number=number
+    )
+    numpy_time = timeit.timeit(
+        lambda: compute_numpy(throttle_a, speed_a, brake_a, distance_a), number=number
+    )
+    return pandas_time, loops_time, numpy_time
+
+def plot_benchmark(df: pd.DataFrame, number: int = 50, path: str = "benchmark.png") -> None:
+    pandas_time, loops_time, numpy_time = _bench_times(df, number)
+    plt.bar(["pandas", "loops", "numpy"], [pandas_time, loops_time, numpy_time])
+    plt.ylabel("seconds")
+    plt.title(f"Telemetry metrics ({len(df):,} rows, {number} runs)")
+    plt.tight_layout()
+    plt.savefig(path)
+    plt.close()
+    print(f"Saved {path}")

@@ -1,6 +1,6 @@
 import fastf1
 import pandas as pd
-from src.benchmarks import verify_results
+from src.benchmarks import verify_results, run_timeit_benchmark, run_cprofile_loops, plot_benchmark
 from src.session_loader import load_race_session, get_driver_telemetry
 from src.inspect import inspect_telemetry
 from src.metrics import compare_drivers
@@ -24,5 +24,10 @@ if __name__ == "__main__":
 
     combined = pd.concat([tel_a, tel_b], ignore_index=True)
     verify_results(combined)
+
+    run_timeit_benchmark(combined, number=50)
+    run_cprofile_loops(combined, number=3)
+
+    plot_benchmark(combined, number=50)
 
     print(f"\nCombined rows for benchmarking later: {len(tel_a) + len(tel_b):,}")
