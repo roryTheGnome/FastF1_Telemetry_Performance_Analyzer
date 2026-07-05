@@ -10,11 +10,11 @@ fastf1.Cache.enable_cache("data")
 
 logging.getLogger("fastf1").setLevel(logging.WARNING)
 
-YEAR = 2025
-GP = "Monaco"
-SESSION = "R"
-DRIVER_A = "VER"
-DRIVER_B = "LEC"
+YEAR = 2026
+GP = "British"
+SESSION = "Q"  # Race (R) not on FastF1 yet — switch to "R" after the GP finishes
+DRIVER_A = "LEC"
+DRIVER_B = "HAM"
 VERBOSE = False
 BENCHMARK_RUNS = 50
 PROFILE_RUNS = 3
